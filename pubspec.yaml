@@ -1,5 +1,5 @@
 name: elora
-description: "A new Flutter project."
+description: "ELORA - inteligência preventiva para a vida real."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.13.3
+  sdk: '>=3.12.2 <4.0.0'
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -30,10 +30,20 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  material_ui: ^1.1.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  shared_preferences: ^2.5.6
+  flutter_secure_storage: ^11.2.0
+  health: ^13.3.2
+  flutter_local_notifications: 19.5.0
+  flutter_timezone: ^5.1.1
+  timezone: ^0.10.1
+  url_launcher: ^6.3.3
+  firebase_core: ^5.1.0
+  firebase_auth: ^7.0.1
 
 dev_dependencies:
   flutter_test:
@@ -45,6 +55,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  shared_preferences_platform_interface: ^2.4.2
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -56,6 +67,9 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  assets:
+    - assets/brand/logo_light.jpeg
+    - assets/brand/logo_dark.jpeg
 
   # To add assets to your application, add an assets section, like this:
   # assets:

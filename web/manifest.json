@@ -1,11 +1,11 @@
 {
-    "name": "elora",
-    "short_name": "elora",
+    "name": "ELORA",
+    "short_name": "ELORA",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Inteligência preventiva para a vida real.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
