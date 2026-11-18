@@ -48,6 +48,13 @@ class AssistenteLocal {
         rotuloAcao: 'Ver meu cuidado',
       );
     }
+    if (_contemAlgum(text, ['glicemia', 'glicose'])) {
+      return const RespostaAssistente(
+        'Registrar glicemia ajuda a organizar valores que você mediu e a levar informações para a conversa com seu profissional. A ELORA não interpreta o resultado nem orienta condutas; use o registro junto das orientações que você já recebeu.',
+        destino: DestinoAssistente.cuidado,
+        rotuloAcao: 'Abrir meu cuidado',
+      );
+    }
     if (_contemAlgum(text, ['calor', 'quente', 'temperatura', 'sol'])) {
       return const RespostaAssistente(
         'Para se preparar para calor intenso, procure água e sombra e ajuste atividades quando possível. Se surgirem sintomas como tontura ou fraqueza, busque avaliação em uma unidade de saúde. Veja a orientação oficial na área de proteção.',

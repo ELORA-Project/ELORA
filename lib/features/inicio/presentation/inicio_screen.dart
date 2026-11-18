@@ -1,8 +1,9 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../../../core/data/elora_store.dart';
-import '../../../core/presentation/tema_elora.dart';
+import '../../../core/domain/contexto_cuidado.dart';
 import '../../../core/presentation/componentes_elora.dart';
+import '../../../core/presentation/tema_elora.dart';
 
 class InicioScreen extends StatelessWidget {
   const InicioScreen({
@@ -20,9 +21,19 @@ class InicioScreen extends StatelessWidget {
   final VoidCallback onTrabalho;
   final VoidCallback onAmbiente;
 
+  String get _saudacao {
+    final hora = DateTime.now().hour;
+    if (hora < 12) return 'Bom dia';
+    if (hora < 18) return 'Boa tarde';
+    return 'Boa noite';
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = CoresElora.of(context);
+    final orientacao = store.orientacoesContextuais.isEmpty
+        ? null
+        : store.orientacoesContextuais.first;
     return ColunaConteudo(
       children: [
         Row(
@@ -32,14 +43,14 @@ class InicioScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Olá, ${store.name}',
+                    '$_saudacao, ${store.name}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Como posso ajudar você hoje?',
+                    'Vamos transformar seus dados em cuidado prático.',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
@@ -57,31 +68,28 @@ class InicioScreen extends StatelessWidget {
           ),
         ],
         const SizedBox(height: 18),
+        _PrioridadeAgora(orientacao: orientacao, onTap: () => onNavigate(1)),
+        const SizedBox(height: 14),
         _DestaqueAssistente(onTap: onAssistente),
-        const SizedBox(height: 20),
+        const SizedBox(height: 14),
         CartaoElora(
           color: colors.surfaceAlt,
           onTap: onAmbiente,
           child: Row(
             children: [
-              Icon(Icons.wb_sunny_outlined, color: colors.accent, size: 34),
+              Icon(Icons.cloud_outlined, color: colors.accent, size: 32),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Cenário ilustrativo',
+                      'Prepare-se para o ambiente',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      'Calor intenso · 32°C (exemplo)',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      'Sem consulta ao clima em tempo real',
+                      'Calor, chuvas e alertas oficiais: veja cuidados educativos para o seu contexto.',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
@@ -105,30 +113,30 @@ class InicioScreen extends StatelessWidget {
               children: [
                 _Atalho(
                   width: itemWidth,
-                  icon: Icons.favorite_border_rounded,
-                  title: 'Minha saúde',
-                  subtitle: 'Indicadores e metas',
+                  icon: Icons.insights_outlined,
+                  title: 'Entender dados',
+                  subtitle: 'Indicadores e registros',
                   onTap: () => onNavigate(1),
                 ),
                 _Atalho(
                   width: itemWidth,
-                  icon: Icons.work_outline_rounded,
-                  title: 'Meu trabalho',
-                  subtitle: 'Rotina e pausas',
+                  icon: Icons.schedule_outlined,
+                  title: 'Minha rotina',
+                  subtitle: 'Pausas e bem-estar',
                   onTap: onTrabalho,
                 ),
                 _Atalho(
                   width: itemWidth,
                   icon: Icons.eco_outlined,
-                  title: 'Meu ambiente',
-                  subtitle: 'Contexto e clima',
+                  title: 'Ambiente',
+                  subtitle: 'Preparação educativa',
                   onTap: onAmbiente,
                 ),
                 _Atalho(
                   width: itemWidth,
                   icon: Icons.shield_outlined,
-                  title: 'Minha proteção',
-                  subtitle: 'Plano e ajuda',
+                  title: 'Plano de segurança',
+                  subtitle: 'Preparação e ajuda',
                   onTap: () => onNavigate(2),
                 ),
               ],
@@ -147,12 +155,12 @@ class InicioScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Seu cuidado contínuo',
+                      'Seu histórico pessoal',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${store.registros.length} registros · ${store.metasConcluidasHoje} metas hoje · ${store.tarefasPlanoConcluidas}/${store.plano.length} itens do plano',
+                      '${store.registros.length} registros · ${store.metasConcluidasHoje} metas hoje · ${store.tarefasPlanoConcluidas}/${store.plano.length} itens preparados',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
@@ -167,6 +175,61 @@ class InicioScreen extends StatelessWidget {
   }
 }
 
+class _PrioridadeAgora extends StatelessWidget {
+  const _PrioridadeAgora({required this.orientacao, required this.onTap});
+  final OrientacaoContextual? orientacao;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = CoresElora.of(context);
+    final temOrientacao = orientacao != null;
+    return CartaoElora(
+      color: colors.surfaceAlt,
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                temOrientacao
+                    ? Icons.tips_and_updates_outlined
+                    : Icons.favorite_outline_rounded,
+                color: colors.accent,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Sua prioridade agora',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            orientacao?.titulo ?? 'Seu cuidado, do seu jeito',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 5),
+          Text(
+            orientacao?.mensagem ??
+                'Comece registrando um indicador, conte para a ELORA o que você quer entender ou explore seus cuidados.',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 12),
+          TextButton.icon(
+            onPressed: onTap,
+            icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+            label: Text(
+              temOrientacao ? 'Ver meus cuidados' : 'Explorar cuidados',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _DestaqueAssistente extends StatelessWidget {
   const _DestaqueAssistente({required this.onTap});
   final VoidCallback onTap;
@@ -175,7 +238,6 @@ class _DestaqueAssistente extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = CoresElora.of(context);
     return Container(
-      height: 220,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -183,64 +245,58 @@ class _DestaqueAssistente extends StatelessWidget {
           colors: [colors.heroStart, colors.heroEnd],
         ),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: colors.accent.withValues(alpha: 0.20),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
       clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          const Positioned(
-            right: -15,
-            top: -25,
-            child: Opacity(opacity: 0.7, child: LogoCircular(size: 170)),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(
-                  Icons.auto_awesome_outlined,
-                  color: Color(0xFFFFDCA6),
-                ),
-                const Spacer(),
-                const Text(
-                  'Como posso te ajudar hoje?',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 21,
-                  ),
-                ),
-                const SizedBox(height: 7),
-                const Text(
-                  'Entenda um indicador, prepare-se para o calor ou organize sua próxima consulta.',
-                  style: TextStyle(
-                    color: Color(0xFFFFE9D9),
-                    fontSize: 13,
-                    height: 1.3,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                FilledButton.icon(
-                  onPressed: onTap,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFFFFEACB),
-                    foregroundColor: const Color(0xFF5D2413),
-                    minimumSize: const Size(0, 40),
-                  ),
-                  icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
-                  label: const Text('Conversar com a ELORA'),
-                ),
-              ],
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.auto_awesome_outlined,
+              color: Color(0xFFFFDCA6),
+              size: 30,
             ),
-          ),
-        ],
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Converse com a ELORA',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Entenda um dado, prepare-se para o ambiente ou organize uma consulta.',
+                    style: TextStyle(
+                      color: Color(0xFFFFE9D9),
+                      fontSize: 13,
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  FilledButton.icon(
+                    onPressed: onTap,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFEACB),
+                      foregroundColor: const Color(0xFF5D2413),
+                      minimumSize: const Size(0, 40),
+                    ),
+                    icon: const Icon(
+                      Icons.chat_bubble_outline_rounded,
+                      size: 18,
+                    ),
+                    label: const Text('Fazer uma pergunta'),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -254,7 +310,6 @@ class _Atalho extends StatelessWidget {
     required this.subtitle,
     required this.onTap,
   });
-
   final double width;
   final IconData icon;
   final String title;

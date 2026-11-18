@@ -86,7 +86,9 @@ class ProtecaoScreen extends StatelessWidget {
             subtitle: guide.subtitle,
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute<void>(builder: (_) => GuiaScreen(guide: guide)),
+              MaterialPageRoute<void>(
+                builder: (_) => GuiaScreen(guide: guide, store: store),
+              ),
             ),
           ),
           const SizedBox(height: 10),
@@ -211,8 +213,49 @@ const guides = <Guia>[
 ];
 
 class GuiaScreen extends StatelessWidget {
-  const GuiaScreen({super.key, required this.guide});
+  const GuiaScreen({super.key, required this.guide, required this.store});
   final Guia guide;
+  final EloraStore store;
+
+  List<String> get _itensPlano => switch (guide.title) {
+    'Calor intenso' => const [
+      'Separar água para o dia',
+      'Planejar pausas em local fresco',
+      'Usar proteção adequada contra o sol',
+    ],
+    'Enchentes' => const [
+      'Separar documentos e medicamentos essenciais',
+      'Definir uma rota segura',
+      'Acompanhar alertas oficiais',
+    ],
+    _ => const [
+      'Conferir contatos de confiança',
+      'Identificar um local seguro',
+      'Acompanhar orientações de evacuação',
+    ],
+  };
+
+  void _adicionarAoPlano(BuildContext context) {
+    var adicionados = 0;
+    for (final item in _itensPlano) {
+      final existe = store.plano.any(
+        (tarefa) => tarefa.title.trim().toLowerCase() == item.toLowerCase(),
+      );
+      if (!existe) {
+        store.adicionarTarefa(item);
+        adicionados++;
+      }
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          adicionados == 0
+              ? 'Esses itens já estão no seu plano pessoal.'
+              : '$adicionados item(ns) foram adicionados ao seu plano.',
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -249,6 +292,12 @@ class GuiaScreen extends StatelessWidget {
           const SizedBox(height: 10),
         ],
         const SizedBox(height: 12),
+        FilledButton.icon(
+          onPressed: () => _adicionarAoPlano(context),
+          icon: const Icon(Icons.playlist_add_rounded),
+          label: const Text('Adicionar itens ao meu plano'),
+        ),
+        const SizedBox(height: 10),
         OutlinedButton.icon(
           onPressed: () => abrirLinkExterno(context, guide.urlFonte),
           icon: const Icon(Icons.open_in_new_rounded),

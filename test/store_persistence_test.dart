@@ -1,5 +1,6 @@
 import 'package:elora/core/data/elora_store.dart';
 import 'package:elora/core/data/sensitive_storage.dart';
+import 'package:elora/core/domain/contexto_cuidado.dart';
 import 'package:elora/core/domain/modelos_elora.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -73,6 +74,35 @@ void main() {
     expect(reloaded.falhaAoSalvar, isFalse);
     expect(reloaded.ultimoRegistro(TipoIndicador.hidratacao)?.value, 300);
     expect(reloaded.ultimoRegistro(TipoIndicador.sono)?.value, 7);
+  });
+
+  test('diário reúne dados e ações do mesmo dia', () async {
+    final store = EloraStore(
+      preferences: SharedPreferencesAsync(),
+      sensitiveStorage: MemorySensitiveStorage(),
+    );
+    await store.conectarUsuario('test-user');
+
+    store.adicionarRegistro(TipoIndicador.hidratacao, 500);
+    store.adicionarMetricaManual(TipoMetricaConectada.glicemia, 118);
+    store.registrarRefeicao();
+    store.adicionarMeta('Fazer uma pausa');
+    store.alternarMeta(store.metas.single.id);
+
+    final hoje = store.diarioDoDia(DateTime.now());
+
+    expect(hoje, isNotNull);
+    expect(hoje!.dados.map((item) => item.titulo), contains('Hidratação'));
+    expect(hoje.dados.map((item) => item.titulo), contains('Glicemia'));
+    expect(
+      hoje.dados.firstWhere((item) => item.titulo == 'Glicemia').origem,
+      'Manual',
+    );
+    expect(
+      hoje.acoes.map((item) => item.titulo),
+      contains('Refeição registrada'),
+    );
+    expect(hoje.acoes.map((item) => item.titulo), contains('Meta concluída'));
   });
 }
 

@@ -34,6 +34,7 @@ class EloraStore extends ChangeNotifier {
   String theme = 'system';
   bool textoAmpliado = false;
   String contextoTrabalho = 'Escritório';
+  PerfilCuidado perfilCuidado = PerfilCuidado.naoInformado;
   String notaConsulta = '';
   bool falhaAoSalvar = false;
   bool diabetesAtivo = false;
@@ -57,6 +58,11 @@ class EloraStore extends ChangeNotifier {
   List<TarefaPlano> get plano => List.unmodifiable(_plano);
   List<MetricaConectada> get metricasConectadas =>
       List.unmodifiable(_metricasConectadas);
+  List<String> get fontesConectadas => _metricasConectadas
+      .where((metrica) => metrica.fonte != 'Registro manual')
+      .map((metrica) => metrica.fonte)
+      .toSet()
+      .toList(growable: false);
   List<EventoRotina> get eventosRotina => List.unmodifiable(_eventosRotina);
   List<EventoCiclo> get eventosCiclo => List.unmodifiable(_eventosCiclo);
   List<MedicamentoAgendado> get medicamentos =>
@@ -79,6 +85,145 @@ class EloraStore extends ChangeNotifier {
   int get tarefasPlanoConcluidas =>
       _plano.where((tarefa) => tarefa.done).length;
 
+  List<DiaDiarioCuidado> get diarioCuidado {
+    final itensPorDia = <String, List<ItemDiarioCuidado>>{};
+
+    void adicionar(DateTime data, ItemDiarioCuidado item) {
+      itensPorDia.putIfAbsent(chaveDia(data), () => []).add(item);
+    }
+
+    for (final registro in _registros) {
+      adicionar(
+        registro.createdAt,
+        ItemDiarioCuidado(
+          categoria: CategoriaDiarioCuidado.dadosRegistrados,
+          titulo: registro.indicador.rotulo,
+          valor: registro.indicador.formatar(registro.value),
+          origem: 'Manual',
+          data: registro.createdAt,
+          idRegistroManual: registro.id,
+        ),
+      );
+    }
+    for (final metrica in _metricasConectadas) {
+      adicionar(
+        metrica.registradaEm,
+        ItemDiarioCuidado(
+          categoria: CategoriaDiarioCuidado.dadosRegistrados,
+          titulo: metrica.tipo.rotulo,
+          valor: _formatarMetrica(metrica.valor, metrica.tipo.unidade),
+          origem: metrica.fonte == 'Registro manual' ? 'Manual' : metrica.fonte,
+          data: metrica.registradaEm,
+          idMetricaManual: metrica.fonte == 'Registro manual'
+              ? metrica.id
+              : null,
+        ),
+      );
+    }
+    for (final evento in _eventosRotina) {
+      adicionar(
+        evento.registradoEm,
+        ItemDiarioCuidado(
+          categoria: CategoriaDiarioCuidado.acoesCuidado,
+          titulo: evento.tipo == TipoEventoRotina.refeicao
+              ? 'Refeição registrada'
+              : 'Insulina registrada',
+          valor:
+              evento.tipo == TipoEventoRotina.insulina && evento.valor != null
+              ? _formatarMetrica(evento.valor!, 'unidades')
+              : null,
+          data: evento.registradoEm,
+        ),
+      );
+    }
+    for (final evento in _eventosCiclo) {
+      adicionar(
+        evento.registradoEm,
+        ItemDiarioCuidado(
+          categoria: CategoriaDiarioCuidado.acoesCuidado,
+          titulo: switch (evento.tipo) {
+            TipoEventoCiclo.inicio => 'Início do ciclo registrado',
+            TipoEventoCiclo.fim => 'Fim do ciclo registrado',
+            TipoEventoCiclo.sintoma => 'Sintoma registrado',
+          },
+          valor: evento.descricao,
+          data: evento.registradoEm,
+        ),
+      );
+    }
+    for (final medicamento in _medicamentos) {
+      final confirmacao = medicamento.ultimaConfirmacao;
+      if (confirmacao == null) continue;
+      adicionar(
+        confirmacao,
+        ItemDiarioCuidado(
+          categoria: CategoriaDiarioCuidado.acoesCuidado,
+          titulo: 'Medicamento confirmado',
+          valor: medicamento.nome,
+          data: confirmacao,
+        ),
+      );
+    }
+    for (final meta in _metas) {
+      final data = _dataSalva(meta.completedOn);
+      if (data == null) continue;
+      adicionar(
+        data,
+        ItemDiarioCuidado(
+          categoria: CategoriaDiarioCuidado.acoesCuidado,
+          titulo: 'Meta concluída',
+          valor: meta.title,
+          data: null,
+        ),
+      );
+    }
+    for (final tarefa in _plano) {
+      final data = _dataSalva(tarefa.concluidaEm);
+      if (!tarefa.done || data == null) continue;
+      adicionar(
+        data,
+        ItemDiarioCuidado(
+          categoria: CategoriaDiarioCuidado.acoesCuidado,
+          titulo: 'Item do plano concluído',
+          valor: tarefa.title,
+          data: null,
+        ),
+      );
+    }
+
+    final dias = itensPorDia.entries.map((entrada) {
+      final itens = [...entrada.value]
+        ..sort((a, b) {
+          final dataA = a.data ?? DateTime(0);
+          final dataB = b.data ?? DateTime(0);
+          return dataB.compareTo(dataA);
+        });
+      return DiaDiarioCuidado(
+        data: DateTime.parse(entrada.key),
+        itens: List.unmodifiable(itens),
+      );
+    }).toList()..sort((a, b) => b.data.compareTo(a.data));
+    return List.unmodifiable(dias);
+  }
+
+  DiaDiarioCuidado? diarioDoDia(DateTime data) {
+    final chave = chaveDia(data);
+    for (final dia in diarioCuidado) {
+      if (chaveDia(dia.data) == chave) return dia;
+    }
+    return null;
+  }
+
+  DateTime? _dataSalva(String? valor) {
+    if (valor == null) return null;
+    return DateTime.tryParse(valor);
+  }
+
+  String _formatarMetrica(double valor, String unidade) {
+    final casas = valor == valor.roundToDouble() ? 0 : 1;
+    return '${valor.toStringAsFixed(casas).replaceAll('.', ',')} $unidade';
+  }
+
   Future<void> aguardarGravacao() => _filaGravacao;
 
   Future<void> conectarUsuario(String uid) async {
@@ -89,6 +234,7 @@ class EloraStore extends ChangeNotifier {
     theme = 'system';
     textoAmpliado = false;
     contextoTrabalho = 'Escritório';
+    perfilCuidado = PerfilCuidado.naoInformado;
     notaConsulta = '';
     falhaAoSalvar = false;
     diabetesAtivo = false;
@@ -153,6 +299,10 @@ class EloraStore extends ChangeNotifier {
       name = sensitiveData['name'] as String? ?? 'Visitante';
       contextoTrabalho =
           sensitiveData['workContext'] as String? ?? 'Escritório';
+      perfilCuidado = PerfilCuidado.values.firstWhere(
+        (perfil) => perfil.name == sensitiveData['careProfile'],
+        orElse: () => PerfilCuidado.naoInformado,
+      );
       notaConsulta = sensitiveData['consultationNote'] as String? ?? '';
       diabetesAtivo = sensitiveData['diabetesEnabled'] as bool? ?? false;
       hipertensaoAtiva = sensitiveData['hypertensionEnabled'] as bool? ?? false;
@@ -278,6 +428,12 @@ class EloraStore extends ChangeNotifier {
     _alterado();
   }
 
+  void definirPerfilCuidado(PerfilCuidado value) {
+    perfilCuidado = value;
+    if (value != PerfilCuidado.mulher) cicloAtivo = false;
+    _alterado();
+  }
+
   void definirNotaConsulta(String value) {
     notaConsulta = value.trim();
     _alterado();
@@ -361,13 +517,17 @@ class EloraStore extends ChangeNotifier {
     _alterado();
   }
 
-  void registrarEventoCiclo(TipoEventoCiclo type, {String? description}) {
+  void registrarEventoCiclo(
+    TipoEventoCiclo type, {
+    String? description,
+    DateTime? registradoEm,
+  }) {
     _eventosCiclo.insert(
       0,
       EventoCiclo(
         id: DateTime.now().microsecondsSinceEpoch.toString(),
         tipo: type,
-        registradoEm: DateTime.now(),
+        registradoEm: registradoEm ?? DateTime.now(),
         descricao: description?.trim(),
       ),
     );
@@ -405,6 +565,22 @@ class EloraStore extends ChangeNotifier {
     _alterado();
   }
 
+  void removerFonteConectada(String fonte) {
+    _metricasConectadas.removeWhere((metrica) => metrica.fonte == fonte);
+    integracaoSaudeAtiva = fontesConectadas.isNotEmpty;
+    if (!integracaoSaudeAtiva) ultimaSincronizacaoSaude = null;
+    _alterado();
+  }
+
+  void desconectarDadosSaude() {
+    _metricasConectadas.removeWhere(
+      (metrica) => metrica.fonte != 'Registro manual',
+    );
+    integracaoSaudeAtiva = false;
+    ultimaSincronizacaoSaude = null;
+    _alterado();
+  }
+
   void adicionarRegistro(TipoIndicador indicador, double value) {
     _registros.insert(
       0,
@@ -420,6 +596,13 @@ class EloraStore extends ChangeNotifier {
 
   void removerRegistro(String id) {
     _registros.removeWhere((registro) => registro.id == id);
+    _alterado();
+  }
+
+  void removerMetricaManual(String id) {
+    _metricasConectadas.removeWhere(
+      (metrica) => metrica.id == id && metrica.fonte == 'Registro manual',
+    );
     _alterado();
   }
 
@@ -454,7 +637,10 @@ class EloraStore extends ChangeNotifier {
   void alternarTarefa(String id) {
     final index = _plano.indexWhere((tarefa) => tarefa.id == id);
     if (index < 0) return;
-    _plano[index] = _plano[index].copyWith(done: !_plano[index].done);
+    final tarefa = _plano[index];
+    _plano[index] = tarefa.done
+        ? tarefa.copyWith(done: false, limparConclusao: true)
+        : tarefa.copyWith(done: true, concluidaEm: chaveDia(DateTime.now()));
     _alterado();
   }
 
@@ -487,6 +673,7 @@ class EloraStore extends ChangeNotifier {
     theme = 'system';
     textoAmpliado = false;
     contextoTrabalho = 'Escritório';
+    perfilCuidado = PerfilCuidado.naoInformado;
     notaConsulta = '';
     falhaAoSalvar = false;
     diabetesAtivo = false;
@@ -519,6 +706,7 @@ class EloraStore extends ChangeNotifier {
       'hasStarted': iniciado,
       'name': name,
       'workContext': contextoTrabalho,
+      'careProfile': perfilCuidado.name,
       'consultationNote': notaConsulta,
       'diabetesEnabled': diabetesAtivo,
       'hypertensionEnabled': hipertensaoAtiva,

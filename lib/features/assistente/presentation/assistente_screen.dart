@@ -21,7 +21,7 @@ class _AssistenteScreenState extends State<AssistenteScreen> {
   final scrollController = ScrollController();
   final mensagens = <_MensagemChat>[
     const _MensagemChat(
-      'Olá! Posso explicar indicadores e ajudar você a encontrar orientações de preparação. Escolha uma pergunta para começar.',
+      'Olá! Posso ajudar você a entender dados do dia a dia, organizar uma consulta ou encontrar orientações de preparação. Escolha uma pergunta para começar.',
       false,
     ),
   ];
@@ -94,34 +94,7 @@ class _AssistenteScreenState extends State<AssistenteScreen> {
                   child: AvisoDiscreto(
                     icon: Icons.info_outline_rounded,
                     text:
-                        'Respostas educativas predefinidas. Sem IA generativa, diagnóstico ou atendimento de emergência.',
-                  ),
-                ),
-                SizedBox(
-                  height: 48,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    children: [
-                      ActionChip(
-                        label: const Text(
-                          'O que significa frequência cardíaca?',
-                        ),
-                        onPressed: () =>
-                            _send('O que significa frequência cardíaca?'),
-                      ),
-                      const SizedBox(width: 8),
-                      ActionChip(
-                        label: const Text('Como me preparar para o calor?'),
-                        onPressed: () =>
-                            _send('Como me preparar para o calor?'),
-                      ),
-                      const SizedBox(width: 8),
-                      ActionChip(
-                        label: const Text('Preparar minha consulta'),
-                        onPressed: () => _send('Como preparar minha consulta?'),
-                      ),
-                    ],
+                        'Conteúdo educativo e caminhos do app. A ELORA não substitui avaliação profissional nem atendimento de emergência.',
                   ),
                 ),
                 Expanded(
@@ -164,6 +137,44 @@ class _AssistenteScreenState extends State<AssistenteScreen> {
                                 message.text,
                                 style: Theme.of(context).textTheme.bodyMedium,
                               ),
+                              if (index == 0 && !message.doUsuario) ...[
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Você pode escolher uma opção:',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                                const SizedBox(height: 6),
+                                Wrap(
+                                  spacing: 6,
+                                  runSpacing: 6,
+                                  children: [
+                                    ActionChip(
+                                      label: const Text('Frequência cardíaca'),
+                                      onPressed: () => _send(
+                                        'O que significa frequência cardíaca?',
+                                      ),
+                                    ),
+                                    ActionChip(
+                                      label: const Text('Registrar glicemia'),
+                                      onPressed: () => _send(
+                                        'Para que serve registrar glicemia?',
+                                      ),
+                                    ),
+                                    ActionChip(
+                                      label: const Text('Dia muito quente'),
+                                      onPressed: () => _send(
+                                        'Como me preparar para um dia muito quente?',
+                                      ),
+                                    ),
+                                    ActionChip(
+                                      label: const Text('Organizar consulta'),
+                                      onPressed: () => _send(
+                                        'Quero organizar minha próxima consulta.',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                               if (message.resposta?.destino != null) ...[
                                 const SizedBox(height: 9),
                                 TextButton.icon(
@@ -196,7 +207,7 @@ class _AssistenteScreenState extends State<AssistenteScreen> {
                           maxLength: 240,
                           maxLines: 1,
                           decoration: const InputDecoration(
-                            hintText: 'Pergunte sobre cuidado ou preparação',
+                            hintText: 'Ex.: o que este dado significa?',
                             counterText: '',
                           ),
                           onSubmitted: (_) => _send(),
